@@ -10,10 +10,40 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'nextjs-proxy — One secure entry point for every outbound API call',
+  metadataBase: new URL('https://nextjs-proxy.dev'),
+  title: {
+    default: 'nextjs-proxy — One secure entry point for every outbound API call',
+    template: '%s — nextjs-proxy',
+  },
   description:
     'SSRF protection, CORS management, Rate Limiting, and Request Transformation built directly into the Next.js App Router.',
-  generator: 'v0.app',
+  keywords: [
+    'nextjs-proxy',
+    'Next.js',
+    'API proxy',
+    'SSRF protection',
+    'CORS',
+    'rate limiting',
+    'App Router',
+    'route handler',
+    'streaming',
+  ],
+  authors: [{ name: 'Haroldy Arturo Pérez Rodríguez' }],
+  alternates: { canonical: '/' },
+  openGraph: {
+    type: 'website',
+    siteName: 'nextjs-proxy',
+    title: 'nextjs-proxy — One secure entry point for every outbound API call',
+    description:
+      'SSRF protection, CORS management, Rate Limiting, and Request Transformation built directly into the Next.js App Router.',
+    url: '/',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'nextjs-proxy — Secure API proxy for the Next.js App Router',
+    description:
+      'SSRF protection, CORS, rate limiting, streaming, and request transformation in one App Router handler.',
+  },
   icons: {
     icon: [
       {

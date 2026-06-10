@@ -1,6 +1,8 @@
 import { Check, Minus, X } from "lucide-react"
 
-const rows = [
+type RowValue = boolean | "partial"
+
+const rows: { label: string; rewrites: RowValue; middleware: RowValue; proxy: RowValue }[] = [
   { label: "Security & SSRF protection", rewrites: false, middleware: "partial", proxy: true },
   { label: "Auditing & structured logging", rewrites: false, middleware: "partial", proxy: true },
   { label: "Governance over destinations", rewrites: false, middleware: "partial", proxy: true },
@@ -11,7 +13,7 @@ const rows = [
   { label: "Minimal boilerplate", rewrites: true, middleware: false, proxy: true },
 ]
 
-function Cell({ value }: { value: boolean | "partial" }) {
+function Cell({ value }: { value: RowValue }) {
   if (value === "partial")
     return <Minus className="mx-auto h-4 w-4 text-amber-400" aria-label="Partial" />
   return value ? (

@@ -12,6 +12,8 @@ export const DOCS_SECTIONS: { group: string; items: DocsSection[] }[] = [
       { id: "introduction", label: "Introduction" },
       { id: "installation", label: "Installation" },
       { id: "quick-start", label: "Quick start" },
+      { id: "request-contract", label: "The request contract" },
+      { id: "lifecycle", label: "Request lifecycle & guards" },
     ],
   },
   {
@@ -28,7 +30,7 @@ export const DOCS_SECTIONS: { group: string; items: DocsSection[] }[] = [
     items: [
       { id: "streaming", label: "Streaming passthrough" },
       { id: "transform", label: "Transform & masking" },
-      { id: "errors", label: "Errors & timeouts" },
+      { id: "errors", label: "Errors & status codes" },
       { id: "middleware", label: "Middleware (Next 16)" },
     ],
   },

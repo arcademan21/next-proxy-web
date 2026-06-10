@@ -1,5 +1,6 @@
-import { Package, ShieldCheck } from "lucide-react"
-import { GithubIcon } from "@/components/icons"
+import { Package, ShieldCheck } from "lucide-react";
+import { GithubIcon } from "@/components/icons";
+import Image from "next/image";
 
 export function SiteFooter() {
   return (
@@ -7,7 +8,16 @@ export function SiteFooter() {
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 px-4 py-10 sm:px-6 md:flex-row">
         <div className="flex items-center gap-2">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/15 text-primary ring-1 ring-primary/30">
-            <ShieldCheck className="h-4 w-4" />
+            <Image
+              src="/assets/images/logo.png"
+              alt="nextjs-proxy"
+              width={50}
+              height={50}
+              style={{
+                filter: "drop-shadow(0 0 1px rgba(0, 0, 0, 0.1))",
+                transform: "scale(4)",
+              }}
+            />
           </span>
           <p className="text-center text-sm text-muted-foreground md:text-left">
             <span className="font-medium text-foreground">MIT Licensed</span>
@@ -38,5 +48,5 @@ export function SiteFooter() {
         </div>
       </div>
     </footer>
-  )
+  );
 }

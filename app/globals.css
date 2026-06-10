@@ -128,3 +128,41 @@
     @apply font-sans;
   }
 }
+
+/* --- SectionDivider animations --- */
+@keyframes divider-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes divider-pulse {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.divider-sphere {
+  animation: divider-float 6s ease-in-out infinite;
+  will-change: transform;
+}
+
+.divider-glow {
+  animation: divider-pulse 7s ease-in-out infinite;
+}
+
+/* Respect users who prefer no motion — freeze everything. */
+@media (prefers-reduced-motion: reduce) {
+  .divider-sphere,
+  .divider-glow {
+    animation: none;
+  }
+}

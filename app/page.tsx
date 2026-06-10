@@ -1,5 +1,6 @@
 import { SiteNav } from "@/components/site-nav"
 import { Hero } from "@/components/hero"
+import { SectionDivider } from "@/components/section-divider"
 import { Features } from "@/components/features"
 import { Docs } from "@/components/docs"
 import { Comparison } from "@/components/comparison"
@@ -10,6 +11,7 @@ export default function Page() {
     <main className="min-h-screen">
       <SiteNav />
       <Hero />
+      <SectionDivider />
       <Features />
       <Docs />
       <Comparison />

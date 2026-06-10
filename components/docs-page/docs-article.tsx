@@ -134,10 +134,46 @@ const ERRORS = `export const POST = nextProxyHandler({
   },
 })`
 
-const MIDDLEWARE = `// Next.js 16: middleware.ts -> proxy.ts, export middleware -> proxy
-// proxy.ts
-export { proxy } from "./lib/edge-proxy"
-export const config = { matcher: "/api/:path*" }`
+const GUARDS = `export const POST = nextProxyHandler({
+  // Guards run top-to-bottom BEFORE the upstream fetch.
+  // The first one that fails short-circuits with its status.
+  auth: (req) => Boolean(req.headers.get("authorization")),   // 401
+  csrf: (req) => req.headers.get("x-csrf") === process.env.CSRF, // 403
+  // CORS origin check (allowOrigins) ............................ 403
+  inMemoryRate: { windowMs: 60_000, max: 100 },               // 429
+  rateLimit: async (req) => myRedisLimiter.check(req),        // 429
+  validate: async (req) => userCanAccess(req),                // 401
+  // SSRF host check on the resolved endpoint ................... 403
+})`
+
+const CLIENT = `// The client always POSTs a JSON body. Shape:
+//   { method, endpoint, data?, route? }
+// Prefer { route } so the server owns the destination.
+
+// Named route (recommended):
+await fetch("/api/proxy", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({ route: "profile", method: "GET" }),
+})
+
+// Relative endpoint (resolved via baseUrl):
+await fetch("/api/proxy", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({ method: "POST", endpoint: "/orders", data: { sku: "X1" } }),
+})`
+
+const MIDDLEWARE = `// nextjs-proxy is a ROUTE HANDLER, not middleware — it lives in
+// app/api/proxy/route.ts. You can still gate that route from the
+// framework's edge file if you want a coarse pre-filter.
+
+// Next 13–15:  middleware.ts        | export middleware
+// Next 16:     proxy.ts             | export proxy
+export function proxy(req) {
+  // optional: cheap allowlist / header check before the handler runs
+}
+export const config = { matcher: "/api/proxy" }`
 
 export function DocsArticle() {
   return (
@@ -150,9 +186,10 @@ export function DocsArticle() {
           rate limiting, streaming, and request transformation in one handler.
         </p>
         <div className="mt-5 flex flex-wrap gap-2 font-mono text-xs">
-          <span className="rounded-full border border-border bg-card/50 px-3 py-1 text-muted-foreground">v2.2.1</span>
+          <span className="rounded-full border border-border bg-card/50 px-3 py-1 text-muted-foreground">v2.2.2</span>
           <span className="rounded-full border border-border bg-card/50 px-3 py-1 text-muted-foreground">MIT</span>
           <span className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-primary">App Router</span>
+          <span className="rounded-full border border-border bg-card/50 px-3 py-1 text-muted-foreground">Next 13–16</span>
         </div>
       </header>
 
@@ -181,6 +218,63 @@ export function DocsArticle() {
           (<code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">pages/api/*</code>) are not supported.
         </p>
         <CodeBlock filename="app/api/proxy/route.ts" code={QUICK} />
+      </Section>
+
+      <Section id="request-contract" eyebrow="Getting started" title="The request contract">
+        <p>
+          The client always sends a JSON body. The proxy reads four fields —{" "}
+          <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">method</code>,{" "}
+          <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">endpoint</code>,{" "}
+          <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">data</code>, and{" "}
+          <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">route</code> — and never trusts anything
+          else from the client. An <code>Authorization</code> header on the incoming request is forwarded upstream as a
+          Bearer token.
+        </p>
+        <CodeBlock filename="client.ts" code={CLIENT} />
+        <Callout tone="info">
+          <p>
+            <code>GET</code> and <code>HEAD</code> are sent without a body. For every other method, <code>data</code> is
+            JSON-encoded as the upstream body with <code>Content-Type: application/json</code>. A relative{" "}
+            <code>endpoint</code> requires <code>baseUrl</code>; an absolute one must pass the{" "}
+            <code>allowedHosts</code> check.
+          </p>
+        </Callout>
+      </Section>
+
+      <Section id="lifecycle" eyebrow="Getting started" title="Request lifecycle & guards">
+        <p>
+          Every request runs through an ordered chain of guards <strong>before</strong> any upstream fetch. The first
+          guard that fails short-circuits the request with its own status code — so streaming, transforms, and the
+          outbound call are never reached on a denied request.
+        </p>
+        <ol className="ml-1 space-y-2 text-sm">
+          {[
+            ["auth", "401 Unauthorized (auth)"],
+            ["csrf", "403 Forbidden (csrf/xss)"],
+            ["CORS origin (OPTIONS preflight + actual request)", "403 Origin not allowed"],
+            ["inMemoryRate", "429 Rate limit exceeded"],
+            ["rateLimit (external hook)", "429 Rate limit exceeded"],
+            ["validate", "401 Unauthorized"],
+            ["Named-route resolution + SSRF host check", "400 / 403"],
+          ].map(([step, status], i) => (
+            <li key={i} className="flex items-start gap-3">
+              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/12 font-mono text-[11px] font-semibold text-primary">
+                {i + 1}
+              </span>
+              <span className="text-foreground/90">
+                <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">{step}</code>{" "}
+                <span className="text-muted-foreground">→ {status} on failure</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+        <CodeBlock filename="app/api/proxy/route.ts" code={GUARDS} />
+        <Callout tone="secure">
+          <p>
+            Because the SSRF host check is the last guard before the fetch, even an authenticated, in-quota request
+            cannot reach a disallowed host. Guards are independent — configure only the ones you need.
+          </p>
+        </Callout>
       </Section>
 
       <Section id="named-routes" eyebrow="Security" title="Named routes">
@@ -272,50 +366,157 @@ export function DocsArticle() {
         </Callout>
       </Section>
 
-      <Section id="errors" eyebrow="Features" title="Errors & timeouts">
+      <Section id="errors" eyebrow="Features" title="Errors & status codes">
         <p>
           A <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">500</code> never serializes the internal
           error to the client (<code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">Internal proxy error</code>);
           full detail goes only to <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">log</code>. Set a
-          timeout to abort slow upstreams.
+          timeout to abort slow upstreams. Every status the handler can return:
         </p>
+        <div className="overflow-hidden rounded-2xl border border-border">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-border bg-card/60 text-left">
+                <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
+                <th className="px-4 py-3 font-medium text-muted-foreground">Body</th>
+                <th className="px-4 py-3 font-medium text-muted-foreground">When</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/60 [&_code]:font-mono [&_code]:text-xs">
+              {[
+                ["401", '{ error: "Unauthorized (auth)" }', "auth hook returns false"],
+                ["403", '{ error: "Forbidden (csrf/xss)" }', "csrf hook returns false"],
+                ["403", '{ error: "Origin not allowed" }', "origin not in allowOrigins (or onCorsDenied body)"],
+                ["429", '{ error: "Rate limit exceeded" }', "inMemoryRate or rateLimit denies"],
+                ["401", '{ error: "Unauthorized" }', "validate hook returns false"],
+                ["400", '{ error: "Named routes are not configured" }', "client sent route but no routes option"],
+                ["400", '{ error: "Unknown route" }', "route name not resolvable"],
+                ["400", '{ error: "Missing method or endpoint" }', "neither route nor method+endpoint present"],
+                ["400", '{ error: "Relative endpoint without baseUrl" }', "relative endpoint and no baseUrl"],
+                ["403", '{ error: "Endpoint not allowed" }', "SSRF: host blocked / not allowlisted"],
+                ["504", '{ error: "Upstream request timed out" }', "upstream exceeded timeoutMs"],
+                ["500", '{ error: "Internal proxy error" }', "any unexpected error (detail only in log)"],
+                ["2xx–5xx", "upstream body (passthrough)", "successful proxy forwards upstream status & body"],
+              ].map(([code, body, when], i) => (
+                <tr key={i} className="hover:bg-secondary/30">
+                  <td className="px-4 py-2.5 align-top">
+                    <code className="rounded bg-primary/12 px-1.5 py-0.5 text-primary">{code}</code>
+                  </td>
+                  <td className="px-4 py-2.5 align-top text-muted-foreground">
+                    <code>{body}</code>
+                  </td>
+                  <td className="px-4 py-2.5 align-top text-muted-foreground">{when}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         <CodeBlock filename="app/api/proxy/route.ts" code={ERRORS} />
       </Section>
 
       <Section id="middleware" eyebrow="Features" title="Middleware (Next.js 16)">
         <p>
-          In Next.js 16, <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">middleware.ts</code> was
-          renamed to <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">proxy.ts</code> and the export{" "}
+          <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">nextjs-proxy</code> is a route handler, not
+          middleware — all guards run inside the handler. If you also want a coarse edge pre-filter, note that Next.js 16
+          renamed <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">middleware.ts</code> to{" "}
+          <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">proxy.ts</code> and the export{" "}
           <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">middleware</code> to{" "}
-          <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">proxy</code>. The guidance still applies to
-          Next 13–15.
+          <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">proxy</code>. That naming applies to the
+          framework file; the package API is unchanged across Next 13–16.
         </p>
         <CodeBlock filename="proxy.ts" code={MIDDLEWARE} />
       </Section>
 
       <Section id="config" eyebrow="Reference" title="Configuration reference">
-        <p>Every option accepted by the handler.</p>
+        <p>
+          Every option accepted by <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">nextProxyHandler</code>,
+          grouped by concern. All are optional; with no options the handler still applies the secure defaults (SSRF
+          blocking of internal hosts, no buffered error leaks).
+        </p>
+
+        <h3 className="mt-2 font-mono text-sm font-semibold text-foreground">Destinations</h3>
         <div className="rounded-2xl border border-border bg-card/30 px-5">
-          <Opt name="routes" type="Record<string, string> | (name, req) => string">
-            Named, server-controlled destinations so the client never picks the URL.
+          <Opt name="routes" type="Record<string, string> | (name, req) => string | undefined">
+            Named, server-controlled destinations so the client never picks the URL. Record or resolver function; return
+            <code> undefined</code> to reject. The safest mode — eliminates client-driven SSRF.
           </Opt>
-          <Opt name="baseUrl" type="string">Prefix used to resolve relative endpoints; its host is trusted.</Opt>
-          <Opt name="allowedHosts" type="string | string[] | (url, req) => boolean">
-            Allowlist for absolute endpoints. Supports exact host, <code>*.example.com</code>, and <code>*</code>.
+          <Opt name="baseUrl" type="string">Prefix used to resolve relative endpoints; its host is implicitly trusted.</Opt>
+          <Opt name="allowedHosts" type="string | string[] | (url: URL, req) => boolean">
+            Allowlist for absolute endpoints. Supports exact host, <code>*.example.com</code>, and <code>*</code>. Omitted
+            ⇒ absolute endpoints are rejected and only <code>baseUrl</code>-relative ones are allowed.
           </Opt>
           <Opt name="allowPrivateHosts" type="boolean (default false)">
-            Opt-in escape hatch for internal / loopback / metadata hosts.
+            Opt-in escape hatch for internal / loopback / link-local / metadata hosts.
           </Opt>
-          <Opt name="allowOrigins" type="string[]">CORS allowlist of permitted origins (use a list, not <code>*</code>, with credentials).</Opt>
-          <Opt name="corsCredentials" type="boolean">Emit <code>Access-Control-Allow-Credentials: true</code> and reflect the origin.</Opt>
-          <Opt name="inMemoryRate" type="{ windowMs, max, key?, store? }">In-memory rate limit by IP or custom key; pluggable store for global limits.</Opt>
-          <Opt name="stream" type='boolean | "auto" | (req) => boolean | "auto"'>Pipe the upstream body without buffering for SSE / NDJSON / token streams.</Opt>
-          <Opt name="transformRequest" type="({ method, endpoint, data }) => {…}">Modify the payload before the upstream fetch.</Opt>
-          <Opt name="transformResponse" type="(res) => any">Adjust the response before sending it (skipped while streaming).</Opt>
-          <Opt name="maskSensitiveData" type="(data) => any">Sanitize and mask sensitive keys before transit.</Opt>
-          <Opt name="validate" type="(req) => boolean | Promise<boolean>">Block the flow for auth or permission checks.</Opt>
-          <Opt name="timeoutMs" type="number (default 30000)">Abort the upstream fetch; <code>0</code> disables. Timeouts return <code>504</code>.</Opt>
-          <Opt name="log" type="(info) => void">Receive <code>request</code>, <code>response</code>, and <code>error</code> events.</Opt>
+          <Opt name="timeoutMs" type="number (default 30000)">
+            Abort the upstream fetch after N ms; <code>0</code> disables. Timeouts return <code>504</code>. For streams it
+            only guards time-to-headers.
+          </Opt>
+        </div>
+
+        <h3 className="mt-6 font-mono text-sm font-semibold text-foreground">Guards & access control</h3>
+        <div className="rounded-2xl border border-border bg-card/30 px-5">
+          <Opt name="auth" type="(req) => boolean | Promise<boolean>">
+            Authentication check run first. Returning <code>false</code> short-circuits with <code>401 Unauthorized (auth)</code>.
+          </Opt>
+          <Opt name="csrf" type="(req) => boolean | Promise<boolean>">
+            CSRF / XSS check. Returning <code>false</code> short-circuits with <code>403 Forbidden (csrf/xss)</code>.
+          </Opt>
+          <Opt name="validate" type="(req) => boolean | Promise<boolean>">
+            Final pre-fetch authorization / permission check. Returning <code>false</code> ⇒ <code>401 Unauthorized</code>.
+          </Opt>
+          <Opt name="rateLimit" type="(req) => boolean | Promise<boolean>">
+            External rate-limit hook (e.g. backed by Redis). Returning <code>false</code> ⇒ <code>429 Rate limit exceeded</code>.
+            Use this for strict global limits instead of <code>inMemoryRate</code>.
+          </Opt>
+          <Opt name="inMemoryRate" type="{ windowMs, max, key?, store? }">
+            In-memory rate limit by IP or custom <code>key</code>; pluggable <code>store</code> for global limits.
+            Per-instance / best-effort on serverless.
+          </Opt>
+        </div>
+
+        <h3 className="mt-6 font-mono text-sm font-semibold text-foreground">CORS</h3>
+        <div className="rounded-2xl border border-border bg-card/30 px-5">
+          <Opt name="allowOrigins" type="string | string[] | (origin, req) => boolean">
+            CORS allowlist of permitted origins. Use a specific origin, list, or function (never <code>*</code>) with credentials.
+          </Opt>
+          <Opt name="corsCredentials" type="boolean (default false)">
+            Emit <code>Access-Control-Allow-Credentials: true</code> and reflect the origin. Throws at construction if combined with a wildcard / unset <code>allowOrigins</code>.
+          </Opt>
+          <Opt name="corsMethods" type='string[] (default ["POST","OPTIONS"])'>
+            Methods advertised in <code>Access-Control-Allow-Methods</code>.
+          </Opt>
+          <Opt name="corsHeaders" type='string[] (default ["Content-Type","Authorization"])'>
+            Headers advertised in <code>Access-Control-Allow-Headers</code>.
+          </Opt>
+          <Opt name="onCorsDenied" type="(origin) => unknown">
+            Custom JSON body returned when an origin is denied (defaults to <code>{`{ error: "Origin not allowed" }`}</code>).
+          </Opt>
+        </div>
+
+        <h3 className="mt-6 font-mono text-sm font-semibold text-foreground">Transform, mask & observe</h3>
+        <div className="rounded-2xl border border-border bg-card/30 px-5">
+          <Opt name="stream" type='boolean | "auto" | (req) => boolean | "auto"'>
+            Pipe the upstream body without buffering for SSE / NDJSON / token streams. <code>"auto"</code> detects stream-like content types.
+          </Opt>
+          <Opt name="transformRequest" type="(payload) => Partial<payload> | void">
+            Reshape the payload before the upstream fetch. Receives <code>{`{ method, endpoint, data, route }`}</code> and may return only the fields to override (or nothing). Rewriting <code>endpoint</code> drops named-route trust and re-validates against <code>allowedHosts</code>.
+          </Opt>
+          <Opt name="transformResponse" type="(res: object) => object">
+            Adjust the response object before it reaches the client. Must return an object; only runs for object responses and is skipped while streaming.
+          </Opt>
+          <Opt name="sanitize" type="(data: unknown) => unknown">
+            Sanitize the request body before transit (runs before <code>maskSensitiveData</code>).
+          </Opt>
+          <Opt name="maskSensitiveData" type="(data: unknown) => unknown">
+            Mask sensitive keys in the outbound request body before transit.
+          </Opt>
+          <Opt name="log" type="(info: LogInfo) => void">
+            Receive structured <code>request</code> / <code>response</code> / <code>error</code> events (ip, method, origin, endpoint, status, durationMs, payload).
+          </Opt>
+          <Opt name="monitor" type="(req, res?) => void">
+            Suspicious-activity hook called after a response (without the body for streamed responses).
+          </Opt>
         </div>
       </Section>
 
@@ -347,6 +548,15 @@ export function DocsArticle() {
 }
 
 const CHANGELOG = [
+  {
+    version: "v2.2.2",
+    date: "2026-06-05",
+    title: "Formatting & tooling",
+    items: [
+      "Reformatted the handler source to the project formatter (no runtime change).",
+      "No API, behavior, or security changes — the full suite, type-check, lint, build, and the Next 13/14/15 compat matrix stay green.",
+    ],
+  },
   {
     version: "v2.2.1",
     date: "2026-06-04",
