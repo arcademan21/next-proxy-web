@@ -1,12 +1,13 @@
 import Link from "next/link";
 import Image from "next/image";
+import { BookOpen, Rocket, SlidersHorizontal, Sparkles } from "lucide-react";
 import { GithubIcon } from "@/components/icons";
 
 const links = [
-  { label: "Features", href: "/#features" },
-  { label: "Quick start", href: "/#docs" },
-  { label: "Comparison", href: "/#comparison" },
-  { label: "Docs", href: "/docs" },
+  { label: "Features", href: "/#features", Icon: Sparkles },
+  { label: "Quick start", href: "/#docs", Icon: Rocket },
+  { label: "Comparison", href: "/#comparison", Icon: SlidersHorizontal },
+  { label: "Docs", href: "/docs", Icon: BookOpen },
 ];
 
 export function SiteNav() {
@@ -36,8 +37,9 @@ export function SiteNav() {
             <a
               key={l.href}
               href={l.href}
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
+              <l.Icon className="h-4 w-4" />
               {l.label}
             </a>
           ))}

@@ -127,6 +127,33 @@
   html {
     @apply font-sans;
   }
+
+  /* Custom scrollbar styling to match the site theme */
+  * {
+    scrollbar-color: var(--border) var(--card);
+    scrollbar-width: thin;
+  }
+
+  *::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 9999px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--primary) 0%, var(--secondary) 100%);
+    border: 3px solid var(--card);
+    border-radius: 9999px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, var(--primary) 30%, var(--secondary) 100%);
+  }
 }
 
 /* --- SectionDivider animations --- */

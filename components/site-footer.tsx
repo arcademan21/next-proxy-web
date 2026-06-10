@@ -7,7 +7,7 @@ export function SiteFooter() {
     <footer className="border-t border-border/60 bg-card/20">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 px-4 py-10 sm:px-6 md:flex-row">
         <div className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/15 text-primary ring-1 ring-primary/30">
+          <span className="flex h-7 w-7 items-center justify-center text-primary ">
             <Image
               src="/assets/images/logo.png"
               alt="nextjs-proxy"
