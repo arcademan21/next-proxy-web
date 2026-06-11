@@ -103,7 +103,7 @@ export function Hero() {
           </dl>
         </div>
 
-        <div className="max-sm:w-[61%] max-lg:w-[68%]">
+        <div className="hidden max-sm:w-[61%] max-lg:w-[68%] sm:block">
           <div className="mb-3 inline-flex rounded-lg border border-border bg-card/50 p-1">
             <button
               onClick={() => setTab("before")}
