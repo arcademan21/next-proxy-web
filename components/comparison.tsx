@@ -52,8 +52,13 @@ export function Comparison() {
                     alt=""
                     width={50}
                     height={50}
-                    className="inline-block h-4 w-4 md:hidden"
-                    style={{ filter: "drop-shadow(0 0 1px rgba(0, 0, 0, 0.1))" }}
+                    className="inline-block md:hidden"
+                    style={{
+                      width: "3rem",
+                      height: "2rem",
+                      transform: "scale(2.5)",
+                      filter: "drop-shadow(0 0 1px rgba(0, 0, 0, 0.1))",
+                    }}
                   />
                   <span className="hidden md:inline">nextjs-proxy</span>
                 </span>
