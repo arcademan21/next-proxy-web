@@ -137,10 +137,10 @@ export function CodeBlock({ code, filename, variant = "default", className }: Co
         </button>
       </div>
       <pre className="overflow-x-auto p-4 text-[13px] leading-relaxed">
-        <code className="grid min-w-max font-mono">
+        <code className="inline-block min-w-full font-mono">
           {lines.map((line, i) => (
-            <div key={i} className="grid grid-cols-[2ch_1fr] gap-4">
-              <span className="select-none text-right tabular-nums text-muted-foreground/40">{i + 1}</span>
+            <div key={i} className="flex gap-4">
+              <span className="w-6 shrink-0 select-none text-right tabular-nums text-muted-foreground/40">{i + 1}</span>
               <span className="whitespace-pre">{highlight(line, i)}</span>
             </div>
           ))}

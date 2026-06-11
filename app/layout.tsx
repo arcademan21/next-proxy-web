@@ -71,7 +71,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`dark scroll-smooth ${geistSans.variable} ${geistMono.variable}`}
+      className={`dark scroll-smooth overflow-x-hidden ${geistSans.variable} ${geistMono.variable}`}
     >
       <body className="font-sans antialiased bg-background text-foreground">
         {children}
