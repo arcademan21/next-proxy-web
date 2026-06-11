@@ -35,6 +35,15 @@ export const DOCS_SECTIONS: { group: string; items: DocsSection[] }[] = [
     ],
   },
   {
+    group: "Client",
+    items: [
+      { id: "client-intro", label: "Client-side usage" },
+      { id: "proxy-fetch", label: "proxyFetch()" },
+      { id: "proxy-hook", label: "useProxyFetch()" },
+      { id: "proxy-context", label: "ProxyFetchProvider" },
+    ],
+  },
+  {
     group: "Reference",
     items: [
       { id: "config", label: "Configuration reference" },

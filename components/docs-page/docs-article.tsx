@@ -175,6 +175,108 @@ export function proxy(req) {
 }
 export const config = { matcher: "/api/proxy" }`
 
+const CLIENT_INTRO = `import {
+  proxyFetch,
+  useProxyFetch,
+  ProxyFetchProvider,
+} from "nextjs-proxy"
+
+// All three are re-exported from the same package.
+// No extra dependencies required.`
+
+const PROXY_FETCH = `import { proxyFetch } from "nextjs-proxy"
+
+interface User {
+  id: number
+  name: string
+}
+
+// Basic GET (typed response):
+const res = await proxyFetch<User>({
+  route: "user",
+  data: { id: 42 },
+})
+//  method defaults to "GET"
+//  url defaults to "/api/proxy"
+
+if (res.ok) {
+  console.log(res.data.name) // ✅ typed
+} else {
+  console.log(res.status, res.error)
+}
+
+// POST with data:
+const created = await proxyFetch({
+  route: "users",
+  method: "POST",
+  data: { name: "Alice" },
+  headers: { "X-Request-ID": "abc" },
+})
+
+// The proxyFetch function does NOT throw on HTTP errors.
+// Only network failures (DNS, CORS, timeout) throw.
+// Error classification:
+//   "server" ↦ HTTP 4xx/5xx (returned in response.error)
+//   "network" ↦ fetch threw TypeError (caught with try/catch)
+//   "timeout" ↦ AbortError (caught with try/catch)`
+
+const PROXY_HOOK = `import { useProxyFetch } from "nextjs-proxy"
+
+function UserProfile({ userId }: { userId: number }) {
+  const { data, error, loading, refetch } = useProxyFetch<User>({
+    route: "user",
+    data: { id: userId },
+    enabled: true,        // fetch on mount (default)
+  })
+
+  if (loading) return <div>Loading...</div>
+  if (error)  return <div>{error.message}</div>
+  if (!data)  return <div>No data</div>
+
+  return (
+    <div>
+      <p>{data.name}</p>
+      <button onClick={refetch}>Refresh</button>
+    </div>
+  )
+}
+
+// Polling — auto-refetch every 5 s:
+function LiveNotifications() {
+  const { data: notifications } = useProxyFetch({
+    route: "notifications",
+    refetchInterval: 5_000, // starts after first response
+  })
+  return <ul>{notifications?.map(n => <li key={n.id}>{n.message}</li>)}</ul>
+}
+
+// Callbacks:
+useProxyFetch({
+  route: "orders",
+  onSuccess: (data) => trackEvent("orders_loaded", data),
+  onError:   (err)  => reportError(err),
+})`
+
+const PROXY_CONTEXT = `import {
+  ProxyFetchProvider,
+  proxyFetch,
+} from "nextjs-proxy"
+
+// Wrap your app (or a subtree):
+<ProxyFetchProvider url="/api/v2/proxy">
+  <App />
+</ProxyFetchProvider>
+
+// Any component inside the provider:
+const res = await proxyFetch({ route: "user" })
+// → uses "/api/v2/proxy"
+
+// Per-call url overrides context:
+const res2 = await proxyFetch({
+  route: "user",
+  url: "/custom-proxy", // forces this URL
+})`
+
 export function DocsArticle() {
   return (
     <article className="min-w-0 space-y-12 pb-24">
@@ -186,7 +288,7 @@ export function DocsArticle() {
           rate limiting, streaming, and request transformation in one handler.
         </p>
         <div className="mt-5 flex flex-wrap gap-2 font-mono text-xs">
-          <span className="rounded-full border border-border bg-card/50 px-3 py-1 text-muted-foreground">v2.2.2</span>
+          <span className="rounded-full border border-border bg-card/50 px-3 py-1 text-muted-foreground">v2.3.0</span>
           <span className="rounded-full border border-border bg-card/50 px-3 py-1 text-muted-foreground">MIT</span>
           <span className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-primary">App Router</span>
           <span className="rounded-full border border-border bg-card/50 px-3 py-1 text-muted-foreground">Next 13–16</span>
@@ -427,6 +529,183 @@ export function DocsArticle() {
         <CodeBlock filename="proxy.ts" code={MIDDLEWARE} />
       </Section>
 
+      <Section id="client-intro" eyebrow="Client" title="Client-side usage (v2.3.0)">
+        <p>
+          Starting in v2.3.0, the package ships client-side helpers that abstract the POST-to-proxy pattern into a clean,
+          typed API. Use them in React Client Components, plain <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">.ts</code> modules, or
+          anywhere you call <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">fetch</code>.
+        </p>
+        <CodeBlock filename="client.ts" code={CLIENT_INTRO} />
+        <Callout tone="info">
+          <p>
+            The helpers are <strong>client-only</strong>. On the server during SSR, <code>typeof window === "undefined"</code>{" "}
+            causes the hook to skip fetching — proxy calls happen only on the client after hydration.
+          </p>
+        </Callout>
+      </Section>
+
+      <Section id="proxy-fetch" eyebrow="Client" title="proxyFetch()">
+        <p>
+          <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">proxyFetch()</code> is the core client
+          helper. It constructs the JSON payload (<code>method</code>, <code>route</code>, <code>data</code>,{" "}
+          <code>headers</code>), POSTs it to the proxy endpoint, and returns a typed response. HTTP errors (4xx, 5xx) are
+          returned in the response — only network failures throw.
+        </p>
+
+        <h3 className="mt-6 font-mono text-sm font-semibold text-foreground">Response shape</h3>
+        <div className="overflow-hidden rounded-2xl border border-border">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-border bg-card/60 text-left">
+                <th className="px-4 py-3 font-medium text-muted-foreground">Field</th>
+                <th className="px-4 py-3 font-medium text-muted-foreground">Type</th>
+                <th className="px-4 py-3 font-medium text-muted-foreground">Description</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/60 [&_code]:font-mono [&_code]:text-xs">
+              {[
+                ["ok", "boolean", "true when HTTP status is 2xx"],
+                ["status", "number", "HTTP status code (200, 404, 500, etc.)"],
+                ["data", "T | undefined", "Parsed response body (present when ok === true)"],
+                ["error", "ErrorInfo | undefined", "Normalized error (present when ok === false)"],
+                ["headers", "Headers | undefined", "Response headers from the proxy endpoint"],
+              ].map(([field, type, desc], i) => (
+                <tr key={i} className="hover:bg-secondary/30">
+                  <td className="px-4 py-2.5 align-top">
+                    <code className="rounded bg-primary/12 px-1.5 py-0.5 text-primary">{field}</code>
+                  </td>
+                  <td className="px-4 py-2.5 align-top font-mono text-xs text-muted-foreground">{type}</td>
+                  <td className="px-4 py-2.5 align-top text-muted-foreground">{desc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <h3 className="mt-6 font-mono text-sm font-semibold text-foreground">Error classification</h3>
+        <div className="overflow-hidden rounded-2xl border border-border">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-border bg-card/60 text-left">
+                <th className="px-4 py-3 font-medium text-muted-foreground">Type</th>
+                <th className="px-4 py-3 font-medium text-muted-foreground">When</th>
+                <th className="px-4 py-3 font-medium text-muted-foreground">Behavior</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/60 [&_code]:font-mono [&_code]:text-xs">
+              {[
+                ["server", "HTTP 4xx / 5xx", "Returned in response.error — does NOT throw"],
+                ["network", "DNS fail, CORS, network down", "proxyFetch() throws TypeError"],
+                ["timeout", "AbortController timeout", "proxyFetch() throws AbortError"],
+                ["unknown", "Unexpected error shape", "proxyFetch() throws the raw error"],
+              ].map(([type, when, behavior], i) => (
+                <tr key={i} className="hover:bg-secondary/30">
+                  <td className="px-4 py-2.5 align-top">
+                    <code className="rounded bg-primary/12 px-1.5 py-0.5 text-primary">{type}</code>
+                  </td>
+                  <td className="px-4 py-2.5 align-top text-muted-foreground">{when}</td>
+                  <td className="px-4 py-2.5 align-top text-muted-foreground">{behavior}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <CodeBlock filename="client.ts" code={PROXY_FETCH} />
+      </Section>
+
+      <Section id="proxy-hook" eyebrow="Client" title="useProxyFetch()">
+        <p>
+          <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">useProxyFetch()</code> wraps{" "}
+          <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">proxyFetch()</code> with React state
+          management. It returns <code>loading</code>, <code>data</code>, <code>error</code>, and a{" "}
+          <code>refetch()</code> function. Polling via <code>refetchInterval</code> starts after the first response and
+          cleans up on unmount — no memory leaks.
+        </p>
+
+        <h3 className="mt-6 font-mono text-sm font-semibold text-foreground">Return value</h3>
+        <div className="overflow-hidden rounded-2xl border border-border">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-border bg-card/60 text-left">
+                <th className="px-4 py-3 font-medium text-muted-foreground">Field</th>
+                <th className="px-4 py-3 font-medium text-muted-foreground">Type</th>
+                <th className="px-4 py-3 font-medium text-muted-foreground">Description</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/60 [&_code]:font-mono [&_code]:text-xs">
+              {[
+                ["data", "T | undefined", "Response data (present on success)"],
+                ["error", "ErrorInfo | undefined", "Normalized error (present on failure)"],
+                ["loading", "boolean", "true while a fetch is in flight"],
+                ["refetch", "() => Promise<void>", "Manually re-run the request (debounced)"],
+              ].map(([field, type, desc], i) => (
+                <tr key={i} className="hover:bg-secondary/30">
+                  <td className="px-4 py-2.5 align-top">
+                    <code className="rounded bg-primary/12 px-1.5 py-0.5 text-primary">{field}</code>
+                  </td>
+                  <td className="px-4 py-2.5 align-top font-mono text-xs text-muted-foreground">{type}</td>
+                  <td className="px-4 py-2.5 align-top text-muted-foreground">{desc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="mt-4 space-y-4 text-sm text-muted-foreground">
+          <Callout tone="info">
+            <p>
+              <strong>Polling:</strong> starts <em>after</em> the first response to avoid a race condition on mount.
+              Continues on error. Cleaned up on unmount. Manual <code>refetch()</code> restarts the interval.
+            </p>
+          </Callout>
+          <Callout tone="info">
+            <p>
+              <strong>Debounce:</strong> <code>refetch()</code> is a no-op while a fetch is already in progress. Prevents
+              accidental double-clicks or rapid re-renders from firing concurrent requests.
+            </p>
+          </Callout>
+        </div>
+
+        <CodeBlock filename="component.tsx" code={PROXY_HOOK} />
+      </Section>
+
+      <Section id="proxy-context" eyebrow="Client" title="ProxyFetchProvider">
+        <p>
+          <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">ProxyFetchProvider</code> is an optional
+          React Context provider that injects a proxy endpoint URL into all child{" "}
+          <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">proxyFetch()</code> and{" "}
+          <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">useProxyFetch()</code> calls.
+        </p>
+
+        <h3 className="mt-6 font-mono text-sm font-semibold text-foreground">URL resolution priority</h3>
+        <ol className="ml-1 space-y-2 text-sm">
+          {[
+            ["Per-call url option", "highest priority — forces this URL for this call only"],
+            ["Context URL (from ProxyFetchProvider)", "used when no per-call url is given"],
+            ['Default "/api/proxy"', 'used when no provider is present and no url is given'],
+          ].map(([step, desc], i) => (
+            <li key={i} className="flex items-start gap-3">
+              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/12 font-mono text-[11px] font-semibold text-primary">
+                {i + 1}
+              </span>
+              <span className="text-foreground/90">
+                <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">{step}</code>{" "}
+                <span className="text-muted-foreground">— {desc}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+
+        <CodeBlock filename="app/layout.tsx" code={PROXY_CONTEXT} />
+        <Callout tone="info">
+          <p>
+            The provider is fully optional. If you don't need a custom URL, skip it — all calls default to{" "}
+            <code>/api/proxy</code>. The provider is safe to use outside a Provider (returns the default).
+          </p>
+        </Callout>
+      </Section>
+
       <Section id="config" eyebrow="Reference" title="Configuration reference">
         <p>
           Every option accepted by <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">nextProxyHandler</code>,
@@ -548,6 +827,29 @@ export function DocsArticle() {
 }
 
 const CHANGELOG = [
+  {
+    version: "v2.3.0",
+    date: "2026-06-11",
+    title: "Client-side helpers (proxyFetch, useProxyFetch, ProxyFetchProvider)",
+    items: [
+      "New proxyFetch() client helper with error classification, response parsing, and generic typing.",
+      "New useProxyFetch() React hook with loading/data/error states, polling, and debounced refetch.",
+      "New ProxyFetchProvider React Context for optional URL injection.",
+      "All exported from the package entry point — zero extra dependencies.",
+      "158 total tests (66 new), client.ts 100% coverage, hooks.ts 98% coverage.",
+    ],
+  },
+  {
+    version: "v2.2.3",
+    date: "2026-06-06",
+    title: "Quality hardening",
+    items: [
+      "Targeted unit tests raising branch coverage from ~83% to ~91%, statement coverage from ~89% to ~96%.",
+      "typecheck script wired as pretest so local test runs the same type gate as CI.",
+      "Enabled isolatedModules; migrated project history from CHANGE.log to CHANGELOG.md.",
+      "92 tests total, no runtime or API changes.",
+    ],
+  },
   {
     version: "v2.2.2",
     date: "2026-06-05",

@@ -63,7 +63,13 @@ function highlight(line: string, key: number): ReactNode {
             tok === "nextProxyHandler" ||
             tok === "nextProxyHandlerAsync" ||
             tok === "NextResponse" ||
-            tok === "NextRequest"
+            tok === "NextRequest" ||
+            tok === "proxyFetch" ||
+            tok === "useProxyFetch" ||
+            tok === "ProxyFetchProvider" ||
+            tok === "useProxyFetchContext" ||
+            tok === "ErrorInfo" ||
+            tok === "ProxyFetchResponse"
           ) {
             return (
               <span key={`${i}-${j}`} className="text-sky-300/90">
