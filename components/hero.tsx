@@ -59,7 +59,7 @@ export function Hero() {
       />
 
       <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:py-28">
-        <div className="max-sm:w-[66%] max-lg:w-[76%]">
+        <div className="max-sm:w-fit max-lg:w-[76%]">
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
             <ShieldCheck className="h-3.5 w-3.5" />
             Secure API proxy for the App Router
