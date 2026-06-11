@@ -37,12 +37,13 @@ export function Comparison() {
       </div>
 
       <div className="mt-12 overflow-hidden rounded-2xl border border-border">
-        <table className="w-full border-collapse text-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-border bg-card/60 text-left">
               <th className="px-5 py-4 font-medium text-muted-foreground">Capability</th>
               <th className="px-3 py-4 text-center font-medium text-muted-foreground">Rewrites</th>
-              <th className="px-3 py-4 text-center font-medium text-muted-foreground">Custom middleware</th>
+              <th className="hidden px-3 py-4 text-center font-medium text-muted-foreground sm:table-cell">Custom middleware</th>
               <th className="px-3 py-4 text-center">
                 <span className="rounded-md bg-primary/15 px-2.5 py-1 font-mono text-xs font-semibold text-primary">
                   nextjs-proxy
@@ -57,7 +58,7 @@ export function Comparison() {
                 <td className="px-3 py-3.5">
                   <Cell value={r.rewrites} />
                 </td>
-                <td className="px-3 py-3.5">
+                <td className="hidden px-3 py-3.5 sm:table-cell">
                   <Cell value={r.middleware} />
                 </td>
                 <td className="bg-primary/[0.04] px-3 py-3.5">
@@ -67,6 +68,7 @@ export function Comparison() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </section>
   )

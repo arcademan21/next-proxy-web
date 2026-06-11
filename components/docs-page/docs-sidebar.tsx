@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 
 export type DocsSection = { id: string; label: string }
@@ -72,34 +72,70 @@ export function DocsSidebar() {
     return () => observer.disconnect()
   }, [])
 
+  const handleTocChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    const id = e.target.value
+    if (id) {
+      window.location.hash = id
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth" })
+    }
+  }, [])
+
   return (
-    <nav className="sticky top-24 hidden max-h-[calc(100vh-7rem)] overflow-y-auto pr-4 lg:block">
-      <ul className="space-y-6">
-        {DOCS_SECTIONS.map((group) => (
-          <li key={group.group}>
-            <p className="mb-2 font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
-              {group.group}
-            </p>
-            <ul className="space-y-0.5 border-l border-border/60">
+    <>
+      {/* Mobile TOC dropdown — visible below lg */}
+      <div className="lg:hidden">
+        <label htmlFor="docs-toc" className="sr-only">
+          Jump to section
+        </label>
+        <select
+          id="docs-toc"
+          className="sticky top-16 z-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+          onChange={handleTocChange}
+          defaultValue=""
+        >
+          <option value="" disabled>
+            Jump to section…
+          </option>
+          {DOCS_SECTIONS.map((group) => (
+            <optgroup key={group.group} label={group.group}>
               {group.items.map((item) => (
-                <li key={item.id}>
-                  <a
-                    href={`#${item.id}`}
-                    className={cn(
-                      "-ml-px block border-l py-1.5 pl-4 text-sm transition-colors",
-                      active === item.id
-                        ? "border-primary font-medium text-primary"
-                        : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
-                    )}
-                  >
-                    {item.label}
-                  </a>
-                </li>
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
               ))}
-            </ul>
-          </li>
-        ))}
-      </ul>
-    </nav>
+            </optgroup>
+          ))}
+        </select>
+      </div>
+      {/* Desktop sidebar nav — hidden below lg */}
+      <nav className="sticky top-24 hidden max-h-[calc(100vh-7rem)] overflow-y-auto pr-4 lg:block">
+        <ul className="space-y-6">
+          {DOCS_SECTIONS.map((group) => (
+            <li key={group.group}>
+              <p className="mb-2 font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
+                {group.group}
+              </p>
+              <ul className="space-y-0.5 border-l border-border/60">
+                {group.items.map((item) => (
+                  <li key={item.id}>
+                    <a
+                      href={`#${item.id}`}
+                      className={cn(
+                        "-ml-px block border-l py-1.5 pl-4 text-sm transition-colors",
+                        active === item.id
+                          ? "border-primary font-medium text-primary"
+                          : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
+                      )}
+                    >
+                      {item.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </>
   )
 }

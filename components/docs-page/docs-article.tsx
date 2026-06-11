@@ -7,7 +7,7 @@ function Section({ id, eyebrow, title, children }: { id: string; eyebrow?: strin
     <section id={id} className="scroll-mt-24 border-t border-border/60 pt-12 first:border-t-0 first:pt-0">
       {eyebrow ? <p className="font-mono text-xs font-semibold uppercase tracking-wider text-primary">{eyebrow}</p> : null}
       <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h2>
-      <div className="mt-5 space-y-4 text-[15px] leading-relaxed text-muted-foreground">{children}</div>
+      <div className="mt-5 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-[15px]">{children}</div>
     </section>
   )
 }
@@ -282,7 +282,7 @@ export function DocsArticle() {
     <article className="min-w-0 space-y-12 pb-24">
       <header>
         <p className="font-mono text-sm text-primary">Documentation</p>
-        <h1 className="mt-2 text-balance text-4xl font-semibold tracking-tight">nextjs-proxy</h1>
+        <h1 className="mt-2 text-balance text-3xl font-semibold tracking-tight sm:text-4xl">nextjs-proxy</h1>
         <p className="mt-4 max-w-2xl text-pretty text-lg leading-relaxed text-muted-foreground">
           A single, hardened entry point for every outbound API call in the Next.js App Router — SSRF protection, CORS,
           rate limiting, streaming, and request transformation in one handler.
@@ -476,7 +476,8 @@ export function DocsArticle() {
           timeout to abort slow upstreams. Every status the handler can return:
         </p>
         <div className="overflow-hidden rounded-2xl border border-border">
-          <table className="w-full border-collapse text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-border bg-card/60 text-left">
                 <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
@@ -512,6 +513,7 @@ export function DocsArticle() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
         <CodeBlock filename="app/api/proxy/route.ts" code={ERRORS} />
       </Section>
@@ -554,7 +556,8 @@ export function DocsArticle() {
 
         <h3 className="mt-6 font-mono text-sm font-semibold text-foreground">Response shape</h3>
         <div className="overflow-hidden rounded-2xl border border-border">
-          <table className="w-full border-collapse text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-border bg-card/60 text-left">
                 <th className="px-4 py-3 font-medium text-muted-foreground">Field</th>
@@ -580,11 +583,13 @@ export function DocsArticle() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
 
         <h3 className="mt-6 font-mono text-sm font-semibold text-foreground">Error classification</h3>
         <div className="overflow-hidden rounded-2xl border border-border">
-          <table className="w-full border-collapse text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-border bg-card/60 text-left">
                 <th className="px-4 py-3 font-medium text-muted-foreground">Type</th>
@@ -609,6 +614,7 @@ export function DocsArticle() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
 
         <CodeBlock filename="client.ts" code={PROXY_FETCH} />
@@ -625,7 +631,8 @@ export function DocsArticle() {
 
         <h3 className="mt-6 font-mono text-sm font-semibold text-foreground">Return value</h3>
         <div className="overflow-hidden rounded-2xl border border-border">
-          <table className="w-full border-collapse text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-border bg-card/60 text-left">
                 <th className="px-4 py-3 font-medium text-muted-foreground">Field</th>
@@ -650,6 +657,7 @@ export function DocsArticle() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
 
         <div className="mt-4 space-y-4 text-sm text-muted-foreground">

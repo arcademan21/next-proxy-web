@@ -44,7 +44,7 @@ export function Features() {
     <section id="features" className="mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:py-28">
       <div className="max-w-2xl">
         <p className="font-mono text-sm text-primary">Core features</p>
-        <h2 className="mt-3 text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
+        <h2 className="mt-3 text-balance text-2xl font-semibold tracking-tight sm:text-4xl">
           Governance and security for every outbound request
         </h2>
         <p className="mt-4 text-pretty text-muted-foreground leading-relaxed">

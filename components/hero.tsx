@@ -65,7 +65,7 @@ export function Hero() {
             Secure API proxy for the App Router
           </div>
 
-          <h1 className="mt-6 text-balance text-4xl font-semibold tracking-tight sm:text-5xl lg:text-[3.4rem] lg:leading-[1.05]">
+          <h1 className="mt-6 text-balance text-3xl font-semibold tracking-tight sm:text-5xl lg:text-[3.4rem] lg:leading-[1.05]">
             One secure entry point for every outbound API call in Next.js
           </h1>
 
