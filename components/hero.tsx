@@ -69,7 +69,7 @@ export function Hero() {
             One secure entry point for every outbound API call in Next.js
           </h1>
 
-          <p className="mt-6 max-w-xl text-pretty text-lg leading-relaxed text-muted-foreground">
+          <p className="mt-6 max-w-xl text-pretty text-lg leading-relaxed text-muted-foreground max-lg:pr-10">
             SSRF protection, CORS management, Rate Limiting, and Request
             Transformation built directly into the App Router.
           </p>
