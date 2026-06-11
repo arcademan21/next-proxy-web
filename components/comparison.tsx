@@ -1,3 +1,4 @@
+import Image from "next/image"
 import { Check, Minus, X } from "lucide-react"
 
 type RowValue = boolean | "partial"
@@ -45,8 +46,16 @@ export function Comparison() {
               <th className="px-3 py-4 text-center font-medium text-muted-foreground">Rewrites</th>
               <th className="hidden px-3 py-4 text-center font-medium text-muted-foreground sm:table-cell">Custom middleware</th>
               <th className="px-3 py-4 text-center">
-                <span className="rounded-md bg-primary/15 px-2.5 py-1 font-mono text-xs font-semibold text-primary">
-                  nextjs-proxy
+                <span className="inline-flex items-center gap-1 rounded-md bg-primary/15 px-2.5 py-1 font-mono text-xs font-semibold text-primary md:px-2.5 md:py-1">
+                  <Image
+                    src="/assets/images/logo.png"
+                    alt=""
+                    width={50}
+                    height={50}
+                    className="inline-block h-4 w-4 md:hidden"
+                    style={{ filter: "drop-shadow(0 0 1px rgba(0, 0, 0, 0.1))" }}
+                  />
+                  <span className="hidden md:inline">nextjs-proxy</span>
                 </span>
               </th>
             </tr>
